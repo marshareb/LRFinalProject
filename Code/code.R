@@ -45,6 +45,13 @@ summary(salaries.mod)
 # Try doing backwards step function on this model
 salaries.mod2 <- step(salaries.mod, salaries, direction=("backward"))
 
+png("Plots/plot1.png")
+plot(salaries)
+dev.off()
+
+# NEED TO SAVE STILL:
+plot(salaries.mod)
+
 # THINGS TO DO:
 # Are there any variables which need quadratic + terms?
 # Any multicollinearity issues? (probably)
