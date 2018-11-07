@@ -14,12 +14,12 @@ library(Hmisc)
 
 # Import the data first
 
-code/salaries <- read_csv("~/Desktop/LRFinalProject/Code/Salaries.csv", 
+salaries.dat <- read_csv("Code/Salaries.csv", 
                      col_types = cols(X1 = col_skip()))
 
 # There is an error using the step function if we keep it as a tibble; concatenated it into a data.frame
 # to fix it.
-code/salaries <- data.frame(Salaries_)
+salaries.dat <- data.frame(Salaries_)
 
 
 # ********************************************************************************************************
