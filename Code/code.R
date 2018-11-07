@@ -14,17 +14,19 @@ library(Hmisc)
 
 # Import the data first
 
-salaries <- read_csv("~/Desktop/LRFinalProject/Code/Salaries.csv", 
+salaries.dat <- read_csv("~/Desktop/LRFinalProject/Code/Salaries.csv", 
                      col_types = cols(X1 = col_skip()))
 
 # There is an error using the step function if we keep it as a tibble; concatenated it into a data.frame
 # to fix it.
-salaries <- data.frame(salaries)
+salaries.dat <- data.frame(salaries.dat)
 
 
 # ********************************************************************************************************
 # CLEANING THE DATA
 # ********************************************************************************************************
+
+salaries <- salaries.dat
 
 # We need to clean the data, updating the qualitative variables from words into actual numbers. This 
 # an initial assignment of things; can be modified in the future.
@@ -57,8 +59,57 @@ salaries$rank <- sapply(salaries$rank, clean)
 salaries$discipline <- sapply(salaries$discipline, clean)
 salaries$sex <- sapply(salaries$sex, clean)
 
+# ALTERNATIVELY:
+
+# Cleans the sex and discipline
+clean2 <- function(name){
+ if (name == "Female"){
+    return(as.integer(1))
+  } else if (name == "B"){
+    return(as.integer(1))
+  } else{
+    return(as.integer(0))
+  }
+}
+
+# Checks if they are an associate professor or not
+clean3 <- function(name){
+  if(name=="AssocProf"){
+    return(1)
+  }
+  else{
+    return(0)
+  }
+}
+
+# Checks if they are an assistant professor or not
+clean4 <- function(name){
+  if(name=="AsstProf"){
+    return(1)
+  }
+  else{
+    return(0)
+  }
+}
+
+# Now we make a new data frame containing this information
+
+discipline <- sapply(salaries.dat$discipline, clean2)
+sex <- sapply(salaries.dat$sex, clean2)
+asstprof <- sapply(salaries.dat$rank, clean4)
+assocprof <- sapply(salaries.dat$rank, clean3)
+
+salaries2 <- data.frame(salaries.dat$salary, salaries.dat$yrs.since.phd, salaries.dat$yrs.service,
+                        discipline, sex, asstprof, assocprof)
+
+# Rename columns since this messes things up
+
+colnames(salaries2) <- c("salary", "yrs.since.phd", "yrs.service", "discipline", "sex", "asstprof", "assocprof")
+
+# I think this is better than what I had before
+
 # ********************************************************************************************************
-# FULL MODEL EXPLORATION
+# FULL MODEL EXPLORATION USING SALARIES
 # ********************************************************************************************************
 
 # Naively just create a model using all of the variables
@@ -80,6 +131,7 @@ dev.off()
 # The residuals vs. fitted looks like there is an issue of nonconstant variance (fanning behavior). Linearity
 # seems okay.
 # The QQ-plot may have some top heavy outliers
+# Conclusion: Non-normality and non-constant variance.
 # Y-transformation through box-cox might fix it.
 
 # Check partial regression plot for each predictor variable
@@ -89,6 +141,45 @@ dev.off()
 # QUESTION: When using qualitative variables, do we still use the measure of slop as to whether or not a 
 # variable is significant?
 # Years since Ph.D., discipline, and rank seem significant.
+
+
+# ********************************************************************************************************
+# FULL MODEL EXPLORATION USING SALARIES2
+# ********************************************************************************************************
+
+# Naively just create a model using all of the variables
+salaries2.mod <- lm(salary ~., salaries2)
+summary(salaries2.mod)
+
+# Residual vs. Fitted plot
+png("Plots/ResidVsFittedSalaries2Mod.png")
+plot(salaries2.mod, which=(1))
+dev.off()
+
+# QQ-Plot
+png("Plots/QQPlotSalaries2Mod.png")
+plot(salaries2.mod, which=(2))
+dev.off()
+
+# POSSIBLE OUTLIERS: CASES 250, 365, 44
+
+# The residuals vs. fitted looks like there is an issue of nonconstant variance (fanning behavior). Linearity
+# however seems great.
+# The QQ-plot has issues; definitely not normal.
+# Conclusion: Non-normality and non-constant variance.
+# Y-transformation through box-cox might fix it.
+
+# Check partial regression plot for each predictor variable
+png("Plots/PartialRegressionPlotsSalaries2.png")
+avPlots(salaries2.mod)
+dev.off()
+# QUESTION: When using qualitative variables, do we still use the measure of slop as to whether or not a 
+# variable is significant?
+# Everything except sex seems to have contribution. Linear issue with discipline maybe?
+
+# ********************************************************************************************************
+# SCATTER PLOT OF DATA
+# ********************************************************************************************************
 
 # Scatter plot of the data
 png("Plots/ScatterPlotofData.png")
@@ -102,21 +193,37 @@ rcorr(as.matrix(cor(salaries)))
 # (which was to be expected)
 
 # ********************************************************************************************************
-# VARIABLE/MODEL SELECTION
+# VARIABLE/MODEL SELECTION (SALARIES1)
 # ********************************************************************************************************
 
 # Backwards step function applied to data:
-salaries.mod2 <- step(salaries.mod, salaries, direction=("backward"))
-summary(salaries.mod2)
+salaries.mod3 <- step(salaries.mod, salaries, direction=("backward"))
+summary(salaries.mod3)
 
 # Forward step function applied to data:
-salaries.mod3 <- step(lm(salary~1, salaries), scope = list(lower = lm(salary~1, salaries), 
+salaries.mod4 <- step(lm(salary~1, salaries), scope = list(lower = lm(salary~1, salaries), 
                                                            upper = lm(salary~., salaries)), 
                       direction="forward")
-summary(salaries.mod3)
+summary(salaries.mod4)
 
 # Give identical results. Both include yrs.since.phd and yrs.service. We may want to explore dropping this
 # variable due to the multicollinearity issue.
+
+# ********************************************************************************************************
+# VARIABLE/MODEL SELECTION (SALARIES2)
+# ********************************************************************************************************
+
+# Backwards step function applied to data:
+salaries2.mod2 <- step(lm(salary~., salaries2), salaries2, direction=("backward"))
+summary(salaries2.mod2)
+
+# Forward step function applied to data:
+salaries2.mod3 <- step(lm(salary~1, salaries2), scope = list(lower = lm(salary~1, salaries2), 
+                                                           upper = lm(salary~., salaries2)), 
+                      direction="forward")
+summary(salaries2.mod3)
+
+# DO NOT GIVE IDENTICAL RESULTS: FORWARD IGNORES YRS.SINCE.PHD AND YRS.SERVICE.
 
 
 # ********************************************************************************************************
@@ -126,3 +233,25 @@ summary(salaries.mod3)
 # Are there any variables which need quadratic + terms?
 # Any multicollinearity issues? (probably)
 # Other diagnostics
+
+
+# ********************************************************************************************************
+# SIMULTANEOUSLY CHECKING ALL HIGHER ORDER INTERACTION (SALARIES2)
+# ********************************************************************************************************
+
+salaries2.mod4 <- lm(salary~(.)^2, salaries2)
+summary(salaries2.mod4)
+
+# This is not super informative due to the large amount of data, but it does lend me to think that there
+# might be a relation between yrs.since.phd. and discipline and yrs.service and discipline.
+
+salaries2.mod5 <- lm(salary~. + yrs.since.phd*discipline + yrs.service*discipline, salaries2)
+summary(salaries2.mod5)
+
+# This agrees that there is some non-trivial interaction between these variables we should consider. Let's try
+# running the backwards step algorithm on this
+
+salaries2.mod6 <- step(salaries2.mod5, salaries2, direction=("backward"))
+summary(salaries2.mod6)
+
+# We see that sex is killed off in this.
