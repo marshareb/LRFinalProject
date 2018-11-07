@@ -25,10 +25,6 @@ The final write up is here. We will be using my write up from the summer as an e
 
 The project is also linked to overleaf. The link for the project is [here](https://www.overleaf.com/2813665139nmbvpqfqhttf). Make sure that when you are working on the project, you click on MENU in the top left, scroll to the SYNC section, click on GitHub, and click on the Pull Changes from GitHub so that way you have the most up to date version. After making any changes, click on the Push Overleaf changes to GitHub. 
 
-## GroupMe 
-
-I don't know if this will ever be relevant, but I guess if you somehow get kicked from the group or are new to the group the link is [here](https://groupme.com/join_group/45195599/qv8CL1).
-
 ______________________________________________________________________________________________________
 
 # Why are we using GitHub/Overleaf?
