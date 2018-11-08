@@ -138,7 +138,7 @@ dev.off()
 png("Plots/PartialRegressionPlotsSalaries.png")
 avPlots(salaries.mod)
 dev.off()
-# QUESTION: When using qualitative variables, do we still use the measure of slop as to whether or not a 
+# QUESTION: When using qualitative variables, do we still use the measure of slope as to whether or not a 
 # variable is significant?
 # Years since Ph.D., discipline, and rank seem significant.
 
@@ -223,9 +223,6 @@ salaries2.mod3 <- step(lm(salary~1, salaries2), scope = list(lower = lm(salary~1
                       direction="forward")
 summary(salaries2.mod3)
 
-# DO NOT GIVE IDENTICAL RESULTS: FORWARD IGNORES YRS.SINCE.PHD AND YRS.SERVICE.
-
-
 # ********************************************************************************************************
 # THINGS TO DO
 # ********************************************************************************************************
@@ -255,3 +252,20 @@ salaries2.mod6 <- step(salaries2.mod5, salaries2, direction=("backward"))
 summary(salaries2.mod6)
 
 # We see that sex is killed off in this.
+
+# We then go ahead with choosing the best model from: salaries, salaries2, and salaries3 (omitting yrs.since.phd).
+
+BestSub(salaries[,2:6], salaries$salary, num=1)
+#Model(4)this suggests to drop sex
+
+BestSub(salaries2[,2:7], salaries2$salary, num=1)
+#Model(5) also suggests to drop sex
+
+salaries3<-data.frame(salaries.dat$salary, salaries.dat$yrs.service,
+                      discipline, sex, asstprof, assocprof)
+BestSub(salaries3[,2:6], salaries3$salaries.dat.salary, num=1)
+#Model(3) using salaries3 suggests that we should drop sex and years.service
+#create a new data set, omitting sex (since all 3 subsets suggests the same thing)
+salaries4<-data.frame(salaries.dat$salary, salaries.dat$yrs.service,discipline,asstprof, assocprof)
+newmodel<-lm(salaries.dat.salary~salaries.dat.yrs.service+asstprof+assocprof, salaries4)
+summary(newmodel)
