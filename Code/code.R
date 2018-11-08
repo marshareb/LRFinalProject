@@ -5,7 +5,6 @@
 library(ALSM)
 library(readr)
 library(car)
-library(lmridge)
 library(MASS)
 library(Hmisc)
 
@@ -291,6 +290,13 @@ shapiro.test(residuals(salaries.mod))
 # p-value greater than 0.05, fail to reject null hypothesis
 # CONCLUSION: Based on QQ-plot and Shapiro-Wilks, we conclude that the residuals are are normally distributed
 
+# The model works!
+
+# Save the model into a separate text file
+sink('final_model.txt')
+summary(salaries.mod)
+sink()
+
 # ********************************************************************************************************
 # AVPLOTS
 # ********************************************************************************************************
@@ -334,6 +340,7 @@ select(mod1)
 dev.off()
 # GCV at 0.53
 
+library(lmridge)
 mod2 <- lmridge(salary~., data=salaries, K = seq(0,0.2,0.01))
 plot(mod2)
 vif(mod2)
