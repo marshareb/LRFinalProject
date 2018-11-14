@@ -88,27 +88,27 @@ colnames(salaries) <- c("salary", "yrs.since.phd", "yrs.service", "discipline", 
 salaries <- salaries[,-3]
 
 # Try stepwise algorithm
-salaries.mod <- step(lm(salary ~ (.)^2, salaries), salaries, direction=("both"))
-summary(salaries.mod)
+#salaries.mod <- step(lm(salary ~ (.)^2, salaries), salaries, direction=("both"))
+#summary(salaries.mod)
 
 
 # We also try starting from nothing and seeing if it will settle on the same model.
-salaries.mod2 <- step(lm(salary~1, salaries), scope = list(lower = lm(salary~1, salaries), 
-                                                           upper = lm(salary~(.)^2, salaries)), 
-                      direction="both")
-summary(salaries.mod2)
+#salaries.mod2 <- step(lm(salary~1, salaries), scope = list(lower = lm(salary~1, salaries), 
+#                                                           upper = lm(salary~(.)^2, salaries)), 
+#                      direction="both")
+#summary(salaries.mod2)
 
 # They do settle on the same thing
 
 # As a final test, try running best sub
-BestSub(salaries[,2:length(salaries)], salaries$salary)
-colnames(salaries)
+#BestSub(salaries[,2:length(salaries)], salaries$salary)
+#colnames(salaries)
 
 # Everything except yrs.since.phd is significant if we go by PRESSp and Cp
 
 salaries.mod <- lm(salary~discipline + sex + asstprof + assocprof, salaries)
 
-plot(salaries.mod)
+#plot(salaries.mod)
 
 
 bmcle <- boxcox(salaries.mod, lambda=seq(-3,3, by=0.1))
@@ -117,17 +117,17 @@ salaries$salary <- (salaries$salary)^(lambda)
 
 salaries.mod <- lm(salary~discipline + sex + asstprof + assocprof, salaries)
 
-plot(salaries.mod)
+#plot(salaries.mod)
 
-lf <- influence.measures(salaries.mod)
+#lf <- influence.measures(salaries.mod)
 
-lf$infmat[318,]
-lf$infmat[283,]
+#lf$infmat[318,]
+#lf$infmat[283,]
 
-intersect(outlierTest(salaries.mod), seq(1,397, by=1)[apply(lf$is.inf, 1, any)])
+#intersect(outlierTest(salaries.mod), seq(1,397, by=1)[apply(lf$is.inf, 1, any)])
 
-influencePlot(salaries.mod)
-dfbetasPlots(salaries.mod)
+#influencePlot(salaries.mod)
+#dfbetasPlots(salaries.mod)
 
 salaries <- salaries[-318,]
 salaries <- salaries[-283,]
