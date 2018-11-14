@@ -7,6 +7,7 @@ library(readr)
 library(car)
 library(MASS)
 library(Hmisc)
+library(onewaytests)
 
 
 # ********************************************************************************************************
@@ -83,6 +84,9 @@ colnames(salaries) <- c("salary", "yrs.since.phd", "yrs.service", "discipline", 
 
 # Justification for two variables for rank: it's a rule of thumb from the book. This will not assume
 # that there is a constant change in mean between these factors.
+
+# Drop years since phd
+salaries <- salaries[,-3]
 
 # ********************************************************************************************************
 # SCATTER PLOT OF DATA
@@ -358,4 +362,4 @@ plot(salaries.mod2)
 # Explore how to fix the multicollinearity issue (certainly not with ridge trace)
 # Explore whether certain variables can be dropped
 # Look into k-fold cross validation of model
-# Examine implications of model.
+# Examine implications of model
