@@ -5,6 +5,7 @@
 library(ALSM)
 library(readr)
 library(car)
+library(MASS)
 library(Hmisc)
 
 
@@ -14,56 +15,30 @@ library(Hmisc)
 
 # Import the data first
 
-salaries.dat <- read_csv("Code/Salaries.csv", 
-                     col_types = cols(X1 = col_skip()))
+salaries.dat <- read_csv("Salaries.csv", 
+                         col_types = cols(X1 = col_skip()))
 
 # There is an error using the step function if we keep it as a tibble; concatenated it into a data.frame
 # to fix it.
-salaries.dat <- data.frame(Salaries_)
+salaries.dat <- data.frame(salaries.dat)
 
 
 # ********************************************************************************************************
 # CLEANING THE DATA
 # ********************************************************************************************************
 
-salaries <- salaries.dat
-
 # We need to clean the data, updating the qualitative variables from words into actual numbers. This 
 # an initial assignment of things; can be modified in the future.
 # RANK:
-# Prof = 0, AsstProf = 1, AssocProf = 2
+# Broken up into two qualitative variables
 # SEX:
 # Male = 0, Female=1
 # FACTOR:
 # A(theoretical) = 0, B(applied) = 1
 
-clean <- function(name){
-  if (name == "AsstProf"){
-    return(as.integer(1))
-  } else if (name == "AssocProf"){
-    return(as.integer(2))
-  } else if (name == "Female"){
-    return(as.integer(1))
-  } else if (name == "B"){
-    return(as.integer(1))
-  } else{
-    return(as.integer(0))
-  }
-}
-
-# Now, we need to run this function over the different variables. We do this by using sapply. The way sapply 
-# works is it runs a function over a list and outputs a list. The general format is 
-# sapply(LIST, FUNCTION)
-
-salaries$rank <- sapply(salaries$rank, clean)
-salaries$discipline <- sapply(salaries$discipline, clean)
-salaries$sex <- sapply(salaries$sex, clean)
-
-# ALTERNATIVELY:
-
 # Cleans the sex and discipline
 clean2 <- function(name){
- if (name == "Female"){
+  if (name == "Female"){
     return(as.integer(1))
   } else if (name == "B"){
     return(as.integer(1))
@@ -99,83 +74,15 @@ sex <- sapply(salaries.dat$sex, clean2)
 asstprof <- sapply(salaries.dat$rank, clean4)
 assocprof <- sapply(salaries.dat$rank, clean3)
 
-salaries2 <- data.frame(salaries.dat$salary, salaries.dat$yrs.since.phd, salaries.dat$yrs.service,
-                        discipline, sex, asstprof, assocprof)
+salaries <- data.frame(salaries.dat$salary, salaries.dat$yrs.since.phd, salaries.dat$yrs.service,
+                       discipline, sex, asstprof, assocprof)
 
 # Rename columns since this messes things up
 
-colnames(salaries2) <- c("salary", "yrs.since.phd", "yrs.service", "discipline", "sex", "asstprof", "assocprof")
+colnames(salaries) <- c("salary", "yrs.since.phd", "yrs.service", "discipline", "sex", "asstprof", "assocprof")
 
-# I think this is better than what I had before
-
-# ********************************************************************************************************
-# FULL MODEL EXPLORATION USING SALARIES
-# ********************************************************************************************************
-
-# Naively just create a model using all of the variables
-salaries.mod <- lm(salary ~rank + discipline + yrs.since.phd + yrs.service + sex, salaries)
-summary(salaries.mod)
-
-# Residual vs. Fitted plot
-png("Plots/ResidVsFittedSalariesMod.png")
-plot(salaries.mod, which=(1))
-dev.off()
-
-# QQ-Plot
-png("Plots/QQPlotSalariesMod.png")
-plot(salaries.mod, which=(2))
-dev.off()
-
-# POSSIBLE OUTLIERS: CASES 250, 365, 44
-
-# The residuals vs. fitted looks like there is an issue of nonconstant variance (fanning behavior). Linearity
-# seems okay.
-# The QQ-plot may have some top heavy outliers
-# Conclusion: Non-normality and non-constant variance.
-# Y-transformation through box-cox might fix it.
-
-# Check partial regression plot for each predictor variable
-png("Plots/PartialRegressionPlotsSalaries.png")
-avPlots(salaries.mod)
-dev.off()
-# QUESTION: When using qualitative variables, do we still use the measure of slope as to whether or not a 
-# variable is significant?
-# Years since Ph.D., discipline, and rank seem significant.
-
-
-# ********************************************************************************************************
-# FULL MODEL EXPLORATION USING SALARIES2
-# ********************************************************************************************************
-
-# Naively just create a model using all of the variables
-salaries2.mod <- lm(salary ~., salaries2)
-summary(salaries2.mod)
-
-# Residual vs. Fitted plot
-png("Plots/ResidVsFittedSalaries2Mod.png")
-plot(salaries2.mod, which=(1))
-dev.off()
-
-# QQ-Plot
-png("Plots/QQPlotSalaries2Mod.png")
-plot(salaries2.mod, which=(2))
-dev.off()
-
-# POSSIBLE OUTLIERS: CASES 250, 365, 44
-
-# The residuals vs. fitted looks like there is an issue of nonconstant variance (fanning behavior). Linearity
-# however seems great.
-# The QQ-plot has issues; definitely not normal.
-# Conclusion: Non-normality and non-constant variance.
-# Y-transformation through box-cox might fix it.
-
-# Check partial regression plot for each predictor variable
-png("Plots/PartialRegressionPlotsSalaries2.png")
-avPlots(salaries2.mod)
-dev.off()
-# QUESTION: When using qualitative variables, do we still use the measure of slop as to whether or not a 
-# variable is significant?
-# Everything except sex seems to have contribution. Linear issue with discipline maybe?
+# Justification for two variables for rank: it's a rule of thumb from the book. This will not assume
+# that there is a constant change in mean between these factors.
 
 # ********************************************************************************************************
 # SCATTER PLOT OF DATA
@@ -193,79 +100,262 @@ rcorr(as.matrix(cor(salaries)))
 # (which was to be expected)
 
 # ********************************************************************************************************
-# VARIABLE/MODEL SELECTION (SALARIES1)
+# STEP FUNCTION TO FIND BEST MODEL
 # ********************************************************************************************************
 
-# Backwards step function applied to data:
-salaries.mod3 <- step(salaries.mod, salaries, direction=("backward"))
-summary(salaries.mod3)
+# Before doing this section, reload data 
 
-# Forward step function applied to data:
-salaries.mod4 <- step(lm(salary~1, salaries), scope = list(lower = lm(salary~1, salaries), 
-                                                           upper = lm(salary~., salaries)), 
-                      direction="forward")
-summary(salaries.mod4)
+# Here, we run the step function with both directions, starting from the function with all
+# interaction
+salaries.mod <- step(lm(salary ~ (.)^2, salaries), salaries, direction=("both"))
+summary(salaries.mod)
 
-# Give identical results. Both include yrs.since.phd and yrs.service. We may want to explore dropping this
-# variable due to the multicollinearity issue.
+# This settles on the model which includes all of our base variables as well as some interaction
+
+# We also try starting from nothing and seeing if it will settle on the same model.
+salaries.mod2 <- step(lm(salary~1, salaries), scope = list(lower = lm(salary~1, salaries), 
+                                                          upper = lm(salary~(.)^2, salaries)), 
+                     direction="both")
+summary(salaries.mod2)
+
+# It seems they do not settle on the same thing.
+
+# We will go with the first one, since it uses all of the first order variables.
+# We append the interaction at the end of the dataset
+salaries[,8] <- salaries[,2]*salaries[,3]
+salaries[,9] <- salaries[,2] * salaries[,4]
+salaries[,10] <- salaries[,3] * salaries[,4]
+salaries[,11] <- salaries[,3] * salaries[,7]
+
+# The best model according to Cp and PRESSp seems to be model 9, which is omitting the
+# yrs.service variable.
+BestSub(salaries[,2:11], salaries$salary, num=1)
+
+salaries.mod <- lm(salary ~ . - yrs.service, salaries)
+
 
 # ********************************************************************************************************
-# VARIABLE/MODEL SELECTION (SALARIES2)
+# DIAGNOSTICS ON THE MODEL
 # ********************************************************************************************************
 
-# Backwards step function applied to data:
-salaries2.mod2 <- step(lm(salary~., salaries2), salaries2, direction=("backward"))
-summary(salaries2.mod2)
+# First, we check summary
+summary(salaries.mod)
 
-# Forward step function applied to data:
-salaries2.mod3 <- step(lm(salary~1, salaries2), scope = list(lower = lm(salary~1, salaries2), 
-                                                           upper = lm(salary~., salaries2)), 
-                      direction="forward")
-summary(salaries2.mod3)
+# Next, let's get a QQ-plot
+png("Plots/QQPlotSalariesStepSub.png")
+plot(salaries.mod, which=(2))
+dev.off()
+
+# Next let's get a residual plot
+png("Plots/ResidVsFittedStepSub.png")
+plot(salaries.mod, which=(1))
+dev.off()
+
+# Can see very clearly that there is non-constant variance, non-normal distribution.
+# Independence seems okay.
+
+# Let's do some tests to make sure.
+
+# Let's do a Shaprio-Wilks with alpha = 0.05 to see
+# H0: Residuals normal
+# Ha: Residuals not normal
+shapiro.test(residuals(salaries.mod))
+# p-value less than 0.05, reject null hypothesis
+# CONCLUSION: Based on QQ-plot and Shapiro-Wilks, we conclude that the residuals are NOT normally distributed
+
+# Let's try doing a Brown Forsythe test
+# H0 : Error variance constant
+# Ha: Error variance nonconstant
+sur <- data.frame(salaries.mod$fitted.values, salaries.mod$residuals)
+colnames(sur) <- c("fit", "resid")
+sur$fit
+sur$group <- rep(1,dim(sur)[1])
+sur$group <- cut(sur$fit, 5)
+bf.test(resid~group, sur)
+# p-value greater than 0.05, fail to reject null
+# CONCLUSION: While BF failed, it's pretty clear that there's something going on.
+
+
+# Since there is a failure of normality AND variance, we may want to explore a Box-Cox Transform
+
+
+# We kill of years.service
+salaries <- salaries[,-3]
+
+# ********************************************************************************************************
+# BOX-COX TRANSFORM
+# ********************************************************************************************************
+
+salaries.mod<-lm(salary~., salaries)
+
+bmcle <- boxcox(salaries.mod, lambda=seq(-3,3, by=0.1))
+lambda <- bmcle$x[which.max(bmcle$y)]
+
+# Let's transform the y-var now
+salaries$salary <- (salaries$salary)^(lambda)
+
+salaries.mod<-lm(salary~., salaries)
+
+# Let's get a QQ-plot
+png("Plots/QQPlotSalariesStepSubA.png")
+plot(salaries.mod, which=(2))
+dev.off()
+
+# Next let's get a residual plot
+png("Plots/ResidVsFittedStepSubA.png")
+plot(salaries.mod, which=(1))
+dev.off()
+
+# I actually think all the factors seem to be okay. Looks linear, looks like other than some
+# outliers everything's good, looks normal, looks independent.
+
+# Let's do some tests to make sure.
+
+# Let's do a Shaprio-Wilks with alpha = 0.05 to see
+# H0: Residuals normal
+# Ha: Residuals not normal
+shapiro.test(residuals(salaries.mod))
+# p-value less than 0.05, reject null hypothesis
+# CONCLUSION: Based on QQ-plot and Shapiro-Wilks, we conclude that the residuals are NOT normally distributed
+
+# Let's try doing a Brown Forsythe test
+# H0 : Error variance constant
+# Ha: Error variance nonconstant
+sur <- data.frame(salaries.mod$fitted.values, salaries.mod$residuals)
+colnames(sur) <- c("fit", "resid")
+sur$fit
+sur$group <- rep(1,dim(sur)[1])
+sur$group <- cut(sur$fit, 5)
+bf.test(resid~group, sur)
+# p-value greater than 0.05, fail to reject null
+# CONCLUSION: While BF failed, it's pretty clear that there's something going on.
+
+# While they failed, it was pretty close. Maybe removing some influential outliers may fix
+# things?
+
+# ********************************************************************************************************
+# OUTLIER EXPLORATION
+# ********************************************************************************************************
+
+# From both QQ and Resid, we see 365, 318, 283 look like outliers.
+
+n <- dim(salaries)[1]
+p <- dim(salaries)[2]-2
+
+# The package CAR has an outliertest function
+
+outlierTest(salaries.mod)
+
+
+# Let's first try just throwing those out
+salaries <- salaries[-365,]
+salaries <- salaries[-318,]
+salaries <- salaries[-299,]
+salaries <- salaries[-283,]
+
+
+
+salaries.mod <- lm(salary ~ ., salaries)
+summary(salaries.mod)
+
+# Let's get a QQ-plot
+png("Plots/QQPlotSalariesStepSubAA.png")
+plot(salaries.mod, which=(2))
+dev.off()
+
+# Next let's get a residual plot
+png("Plots/ResidVsFittedStepSubAA.png")
+plot(salaries.mod, which=(1))
+dev.off()
+
+
+# Everything looks great here, constant variance, independence, normality.
+
+# Let's try doing a Brown Forsythe test, alpha = 0.05
+# H0 : Error variance constant
+# Ha: Error variance nonconstant
+sur <- data.frame(salaries.mod$fitted.values, salaries.mod$residuals)
+colnames(sur) <- c("fit", "resid")
+sur$fit
+sur$group <- rep(1,dim(sur)[1])
+sur$group <- cut(sur$fit, 5)
+bf.test(resid~group, sur)
+# p-value greater than 0.05, fail to reject null
+# CONCLUSION: BF fail to reject, and it looks good!
+
+# Let's do a Shaprio-Wilks with alpha = 0.05 to see
+# H0: Residuals normal
+# Ha: Residuals not normal
+shapiro.test(residuals(salaries.mod))
+# p-value greater than 0.05, fail to reject null hypothesis
+# CONCLUSION: Based on QQ-plot and Shapiro-Wilks, we conclude that the residuals are are normally distributed
+
+# The model works!
+
+# Save the model into a separate text file
+sink('final_model.txt')
+summary(salaries.mod)
+sink()
+
+# ********************************************************************************************************
+# AVPLOTS
+# ********************************************************************************************************
+
+# Let's now explore avPlots of our data
+
+png("Plots/avPlotsSalariesMod.png")
+avPlots(salaries.mod)
+dev.off()
+
+# It looks to me like maybe sex is not as significant as the other variables.
+# Everything looks pretty linear to me!
+
+
+# ********************************************************************************************************
+# MULTICOLLINEARITY EXPLORATION
+# ********************************************************************************************************
+
+# Next, we check for multicollinearity
+
+
+# We make plots again
+plot(salaries)
+
+# Correlation matrix
+rcorr(as.matrix(cor(salaries)))
+
+# Multicollinearity between the interaction variables, as expected really. 
+vif(salaries.mod)
+
+# We see that yrs.since.phd, V8, V9, V10 all have high VIF.
+
+# QUESTION: HOW DO WE DEAL WITH THESE?
+
+# Let's make a ridge trace plot
+
+mod1 <- lm.ridge(salary~.,data=salaries,lambda=seq(0,30,0.01))
+plot(mod1)
+png("Plots/RidgeTracePlot.png")
+select(mod1)
+dev.off()
+# GCV at 0.53
+
+library(lmridge)
+mod2 <- lmridge(salary~., data=salaries, K = seq(0,0.2,0.01))
+plot(mod2)
+vif(mod2)
+# k = 0.17 seems best
+
+# GET PARAMETERS
+salaries.mod2 <- lmridge(salary~., data=salaries, K = 0.19)
+summary(salaries.mod2)
+plot(salaries.mod2)
+
 
 # ********************************************************************************************************
 # THINGS TO DO
 # ********************************************************************************************************
-
-# Are there any variables which need quadratic + terms?
-# Any multicollinearity issues? (probably)
-# Other diagnostics
-
-
-# ********************************************************************************************************
-# SIMULTANEOUSLY CHECKING ALL HIGHER ORDER INTERACTION (SALARIES2)
-# ********************************************************************************************************
-
-salaries2.mod4 <- lm(salary~(.)^2, salaries2)
-summary(salaries2.mod4)
-
-# This is not super informative due to the large amount of data, but it does lend me to think that there
-# might be a relation between yrs.since.phd. and discipline and yrs.service and discipline.
-
-salaries2.mod5 <- lm(salary~. + yrs.since.phd*discipline + yrs.service*discipline, salaries2)
-summary(salaries2.mod5)
-
-# This agrees that there is some non-trivial interaction between these variables we should consider. Let's try
-# running the backwards step algorithm on this
-
-salaries2.mod6 <- step(salaries2.mod5, salaries2, direction=("backward"))
-summary(salaries2.mod6)
-
-# We see that sex is killed off in this.
-
-# We then go ahead with choosing the best model from: salaries, salaries2, and salaries3 (omitting yrs.since.phd).
-
-BestSub(salaries[,2:6], salaries$salary, num=1)
-#Model(4)this suggests to drop sex
-
-BestSub(salaries2[,2:7], salaries2$salary, num=1)
-#Model(5) also suggests to drop sex
-
-salaries3<-data.frame(salaries.dat$salary, salaries.dat$yrs.service,
-                      discipline, sex, asstprof, assocprof)
-BestSub(salaries3[,2:6], salaries3$salaries.dat.salary, num=1)
-#Model(3) using salaries3 suggests that we should drop sex and years.service
-#create a new data set, omitting sex (since all 3 subsets suggests the same thing)
-salaries4<-data.frame(salaries.dat$salary, salaries.dat$yrs.service,discipline,asstprof, assocprof)
-newmodel<-lm(salaries.dat.salary~salaries.dat.yrs.service+asstprof+assocprof, salaries4)
-summary(newmodel)
+# Explore how to fix the multicollinearity issue (certainly not with ridge trace)
+# Explore whether certain variables can be dropped
+# Look into k-fold cross validation of model
+# Examine implications of model.
