@@ -128,7 +128,9 @@ salaries.mod <- lm(salary~discipline + sex + asstprof + assocprof, salaries)
 
 #influencePlot(salaries.mod)
 #dfbetasPlots(salaries.mod)
-
+salaries[318,]
+salaries[283,]
+plot(salaries)
 salaries <- salaries[-318,]
 salaries <- salaries[-283,]
 salaries.mod <- lm(salary~discipline + sex + asstprof + assocprof, salaries)
@@ -159,4 +161,7 @@ bf.test(resid~group, sur)
 shapiro.test(residuals(salaries.mod))
 # p-value greater than 0.05, fail to reject null hypothesis
 # CONCLUSION: Based on QQ-plot and Shapiro-Wilks, we conclude that the residuals are are normally distributed
+
+# Check multicollinearity
+vif(salaries.mod)
 
