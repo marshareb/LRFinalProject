@@ -165,3 +165,23 @@ shapiro.test(residuals(salaries.mod))
 # Check multicollinearity
 vif(salaries.mod)
 
+# Findings from statistical consulting session
+# Shiwei commented that our plots look good, considering we have
+# categorical variables. Also, he agrees with our decision in removing
+# the two outliers, case [283, 318]. Considering we have n=397, removing
+# these two points will not be such a big deal. 
+
+# Also, he suggested us to include reasons why the points are outliers
+# For both cases, they are male full-time professors, have been teaching for 
+# roughly 50 years, but their salaries are low compared to other observations
+# Case 283, earns $57,800 and case 318 earns $67,559. 
+# These are the assumptions that we came up with:
+#   1. Low adaptability to new technologies
+#      - low productivity as they might teach few classes
+#   2. Recession during 2008-2009
+#      - due to the recession, these professors might want to stick with 
+#        their job, despite the low pay. 
+#      - Also, it could be that since salaries are based on yearly contracts,
+#        at the beginning of 2008, the start of the recession, the agreed
+#        salaries for these professors are low in the first place. 
+
