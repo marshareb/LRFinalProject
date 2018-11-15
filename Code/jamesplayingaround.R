@@ -150,6 +150,7 @@ sur$fit
 sur$group <- rep(1,dim(sur)[1])
 sur$group <- cut(sur$fit, 5)
 bf.test(resid~group, sur)
+
 # p-value greater than 0.05, fail to reject null
 # CONCLUSION: BF fail to reject, and it looks good!
 
@@ -159,4 +160,36 @@ bf.test(resid~group, sur)
 shapiro.test(residuals(salaries.mod))
 # p-value greater than 0.05, fail to reject null hypothesis
 # CONCLUSION: Based on QQ-plot and Shapiro-Wilks, we conclude that the residuals are are normally distributed
+
+anova(salaries.mod)
+residualPlot(salaries.mod)
+# H0: Beta1=0, Ha: Beta1<>0
+# Fs> Fc, hence we reject H0 so we agree that discipline is significan to our model
+
+# H0: Beta2=0, Ha: Beta2<>0
+
+# After going to statistical consulting session, Shiwei confirms that our 
+# model looks good. It seems reasonable to remove case [318, 283], because 
+# considering our n=400, removing 2 outliers does not seem like a major deal.
+# Also, after removing the outliers, the plots looked really good, 
+# shows clear normality and constant variance. 
+# He further commented that our plots look fine for models with many 
+# categorical variables.
+
+# He also suggests us to reason why these cases are outliers,
+# Case 283 and Case 318, both are professors, have been in the field for 
+# 46-51 years, but their salaries are $57,800 and $67,559 respectively.
+# Comparing to case 13, even an assistant prof in the same college,
+# who only works for a year, earns $77,700. 
+# Our possible assumptions:
+#         1. Less adaptable to new technologies, 
+#           - may cause low productivity compared to new prof
+#           - teach less classes/session
+#         2. Economic recession in 2008-2009
+#           - Since it's hard to find a new job, so they might consider 
+#             stick with their current job
+#           - Also, since salaries are given based on yearly contracts, 
+#             the recession might play a role here. 
+
+
 
