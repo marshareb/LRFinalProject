@@ -128,7 +128,9 @@ salaries.mod <- lm(salary~discipline + sex + asstprof + assocprof, salaries)
 
 #influencePlot(salaries.mod)
 #dfbetasPlots(salaries.mod)
-
+salaries[318,]
+salaries[283,]
+plot(salaries)
 salaries <- salaries[-318,]
 salaries <- salaries[-283,]
 salaries.mod <- lm(salary~discipline + sex + asstprof + assocprof, salaries)
@@ -150,7 +152,6 @@ sur$fit
 sur$group <- rep(1,dim(sur)[1])
 sur$group <- cut(sur$fit, 5)
 bf.test(resid~group, sur)
-
 # p-value greater than 0.05, fail to reject null
 # CONCLUSION: BF fail to reject, and it looks good!
 
@@ -161,35 +162,79 @@ shapiro.test(residuals(salaries.mod))
 # p-value greater than 0.05, fail to reject null hypothesis
 # CONCLUSION: Based on QQ-plot and Shapiro-Wilks, we conclude that the residuals are are normally distributed
 
-anova(salaries.mod)
-residualPlot(salaries.mod)
-# H0: Beta1=0, Ha: Beta1<>0
-# Fs> Fc, hence we reject H0 so we agree that discipline is significan to our model
+# Check multicollinearity
+vif(salaries.mod)
 
-# H0: Beta2=0, Ha: Beta2<>0
+# Findings from statistical consulting session
+# Shiwei commented that our plots look good, considering we have
+# categorical variables. Also, he agrees with our decision in removing
+# the two outliers, case [283, 318]. Considering we have n=397, removing
+# these two points will not be such a big deal. 
 
-# After going to statistical consulting session, Shiwei confirms that our 
-# model looks good. It seems reasonable to remove case [318, 283], because 
-# considering our n=400, removing 2 outliers does not seem like a major deal.
-# Also, after removing the outliers, the plots looked really good, 
-# shows clear normality and constant variance. 
-# He further commented that our plots look fine for models with many 
-# categorical variables.
+# Also, he suggested us to include reasons why the points are outliers
+# For both cases, they are male full-time professors, have been teaching for 
+# roughly 50 years, but their salaries are low compared to other observations
+# Case 283, earns $57,800 and case 318 earns $67,559. 
+# These are the assumptions that we came up with:
+#   1. Low adaptability to new technologies
+#      - low productivity as they might teach few classes
+#   2. Recession during 2008-2009
+#      - due to the recession, these professors might want to stick with 
+#        their job, despite the low pay. 
+#      - Also, it could be that since salaries are based on yearly contracts,
+#        at the beginning of 2008, the start of the recession, the agreed
+#        salaries for these professors are low in the first place. 
 
-# He also suggests us to reason why these cases are outliers,
-# Case 283 and Case 318, both are professors, have been in the field for 
-# 46-51 years, but their salaries are $57,800 and $67,559 respectively.
-# Comparing to case 13, even an assistant prof in the same college,
-# who only works for a year, earns $77,700. 
-# Our possible assumptions:
-#         1. Less adaptable to new technologies, 
-#           - may cause low productivity compared to new prof
-#           - teach less classes/session
-#         2. Economic recession in 2008-2009
-#           - Since it's hard to find a new job, so they might consider 
-#             stick with their current job
-#           - Also, since salaries are given based on yearly contracts, 
-#             the recession might play a role here. 
 
+# Copy the salaries data into a new data called data2
+data2<-salaries
+# add a column called rank into the data2 from salaries.dat after removing the two outliers
+data2$rank=salaries.dat$rank[-c(318,283)]
+
+# transforming all the predictors to be categorical/factors
+data2$rank=factor(data2$rank, levels=unique(data2$rank))
+data2$discipline=factor(data2$discipline, levels=unique(data2$discipline))
+data2$sex=factor(data2$sex, levels=unique(data2$sex))
+data2$asstprof=factor(data2$asstprof)
+data2$assocprof=factor(data2$assocprof)
+
+# fit the final model( we can see that both models with categorical and non categorical independent variables yield 
+# the same summary results, proceed with the modeltrial2)
+modtrial<- lm(salary~discipline+sex+asstprof+assocprof , data=salaries)
+modtrial2<- lm(salary~discipline+sex+rank , data=data2)
+summary(modtrial)
+summary(modtrial2)
+
+# ready to build constrast for comparing mean salaries for the different ranks as well as computing mean salaries for
+# each ran
+leastsquare=lsmeans(modtrial2,"rank")
+contrasts = list(asstvsprof= c(-1,1,0), # comparing asst prof mean salary to professor mean salary
+            assocvsprof=c(-1,0,1),
+            asstvsassoc=c(0,1,-1),
+            prof=c(1,0,0), # computing mean salary for professor
+            asst=c(0,1,0),
+            assoc=c(0,0,1))
+# run contrast and get results
+contrast(leastsquare, contrasts, adjust="none")
+
+backtransform(lambda, type = c("none"))
+
+# ready to build constrast for comparing mean salaries for the different sex as well as computing mean salaries for
+# each ran
+leastsquare=lsmeans(modtrial2,"sex")
+contrasts = list(malevsfemale= c(-1,1), # comparing male mean salary to female mean salary
+                 male=c(1,0), # computing mean salary for male
+                 female=c(0,1)) #computing mean salary for female
+                 
+# run contrast and get results
+contrast(leastsquare, contrasts, adjust="none")
+
+#backtransform the values for mean salaries and differences in mean salaries for different rank
+(5.468893*10^(-5))^(1/lambda) #asstvsprof
+(3.462624*10^(-5))^(1/lambda) #assocvsprof
+(2.006268*10^(-5))^(1/lambda) #asstvsassoc
+(1.422916*10^(-4))^(1/lambda) #prof
+(1.969805*10^(-4))^(1/lambda) #asst
+(1.769178*10^(-4))^(1/lambda) #assoc
 
 
