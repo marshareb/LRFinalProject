@@ -217,18 +217,6 @@ contrasts = list(asstvsprof= c(-1,1,0), # comparing asst prof mean salary to pro
 # run contrast and get results
 contrast(leastsquare, contrasts, adjust="none")
 
-backtransform(lambda, type = c("none"))
-
-# ready to build constrast for comparing mean salaries for the different sex as well as computing mean salaries for
-# each ran
-leastsquare=lsmeans(modtrial2,"sex")
-contrasts = list(malevsfemale= c(-1,1), # comparing male mean salary to female mean salary
-                 male=c(1,0), # computing mean salary for male
-                 female=c(0,1)) #computing mean salary for female
-                 
-# run contrast and get results
-contrast(leastsquare, contrasts, adjust="none")
-
 #backtransform the values for mean salaries and differences in mean salaries for different rank
 (5.468893*10^(-5))^(1/lambda) #asstvsprof
 (3.462624*10^(-5))^(1/lambda) #assocvsprof
@@ -237,4 +225,29 @@ contrast(leastsquare, contrasts, adjust="none")
 (1.969805*10^(-4))^(1/lambda) #asst
 (1.769178*10^(-4))^(1/lambda) #assoc
 
+leastsquare3=lsmeans(modtrial2,"discipline")
+contrasts = list(theoreticalvsapplied= c(-1,1), # comparing applied discipline mean salary to theoretical discipline mean salary
+                 applied=c(1,0), # computing mean salary for applied discipline
+                 theoretical=c(0,1)) #computing mean salary for theoretical discipline
 
+# run contrast and get results
+contrast(leastsquare3, contrasts, adjust="none")
+
+#backtransform the values for mean salaries and differences in mean salaries for different discipline 
+(1.582697*10^(-5))^(1/lambda) 
+(1.641498*10^(-4))^(1/lambda) 
+(1.799768*10^(-4))^(1/lambda) 
+
+# ready to build constrast for comparing mean salaries for the different sex as well as computing mean salaries for
+# each ran
+leastsquare2=lsmeans(modtrial2,"sex")
+contrasts = list(malevsfemale= c(-1,1), # comparing male mean salary to female mean salary
+                 male=c(1,0), # computing mean salary for male
+                 female=c(0,1)) #computing mean salary for female
+
+# run contrast and get results
+contrast(leastsquare2, contrasts, adjust="none")
+
+#backtransform the values for mean salaries and differences in mean salaries for different sex
+(1.693085*10^(-4))^(1/lambda) 
+(1.748182*10^(-4))^(1/lambda) 
